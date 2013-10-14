@@ -1,0 +1,99 @@
+function microg_error {
+	printf "\E[31mError\t"
+	tput sgr0
+	echo "$1"
+	exit 1
+}
+
+function microg_warning {
+	printf "\E[33mWarn\t"
+	tput sgr0
+	echo "$1"
+}
+
+function microg_info {
+	printf "Info\t"
+	tput sgr0
+	echo "$1"
+}
+
+function microg_success {
+	printf "\E[32mSuccess\t"
+	tput sgr0
+	echo $1
+}
+
+function find_build_file_dir {
+	_res=$(find -L "$microg_dir/sources" -name "$1.microg-build" -printf '%h\n')
+	if [ -z "$_res" ]
+	then
+		microg_warning "Can't find build file for target \"$1\""
+		retrieve_build_file "$1"
+		_res=$(find -L "$microg_dir/sources" -name "$1.microg-build" -printf '%h\n')
+		if [ -z "$_res" ]
+		then
+			microg_error "Could not find or retrieve build file for target \"$1\""
+		fi
+	fi
+}
+
+function find_build_file {
+	find_build_file_dir "$1"
+	_res="$_res/$1.microg-build"
+}
+
+function get_build_typeops {
+	find_build_file "$1"
+	local build_file="$_res"
+	source "$build_file"
+	_res="$build_typeops"
+}
+
+
+function build_dependencies {
+	get_dependencies "$1"
+	local deps="$_res"
+	local dep_updated=false
+	if [ -n "$deps" ]
+	then
+		for dep in $deps
+		do
+			build_target "$dep"
+			if [ ! -e "$microg_dir/build/$dep/.stamp" ] || [[ $(cat "$microg_dir/build/$dep/.stamp") == "$microg_stamp" ]]
+			then
+				dep_updated=true
+			fi
+		done
+	fi
+	_res=$dep_updated
+}
+
+function build_target {
+	build_dependencies "$1"
+	cd "$microg_dir"
+	local dep_updated=$_res
+	if [ -e "$microg_dir/build/$dep/.stamp" ] && ! $dep_updated && [ -d "$microg_dir/build/$1" ] && [[ $(find -L "$microg_dir/sources/$1" -type f -newer "$microg_dir/build/$1") == "" ]]
+	then
+		microg_info "\"$1\" is up-to-date."
+		_res=false
+		return
+	fi
+	rm -rf "$microg_dir/build/$1"
+	microg_info "Building target \"$1\""
+	mkdir "$microg_dir/build/$1"
+	echo $microg_stamp > "$microg_dir/build/$1/.stamp"
+	get_build_typeops "$1"
+	local typeops="$_res"
+	for typeop in $typeops
+	do
+		microg_info "Executing typeop \"$typeop\" for target \"$1\""
+		eval "build_typeop_$typeop $1"
+		if [ "$?" -ne "0" ]
+		then
+			rm -rf "$microg_dir/build/$1"
+			microg_error "Failed building target \"$1\""
+		fi
+	done
+	microg_success "Built target \"$1\""
+	_res=true
+}

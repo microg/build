@@ -1,0 +1,6 @@
+# your own config
+local-config.microg-build
+
+# build files
+build
+out

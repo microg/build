@@ -1,0 +1,79 @@
+function get_dependencies {
+	find_build_file "$1"
+	local build_file="$_res"
+	source "$build_file"
+	_res="$libs_use"
+}
+
+function get_includes {
+	find_build_file "$1"
+	local build_file="$_res"
+	source "$build_file"
+	_res="$libs_inc"
+}
+
+function build_typeop_prebuilt-jar {
+	find_build_file_dir "$1"
+	local filedir="$_res"
+	cp "$filedir/$1.jar" "$microg_dir/build/$1/$1.jar"
+}
+
+function build_classpath {
+	get_dependencies "$1"
+	local deps="$_res"
+	local classpath="$base_classpath"
+	if [ -n "$deps" ]
+	then
+		for dep in $deps
+		do
+			get_build_typeops "$dep"
+			local typeops="$_res"
+			if [[ "$typeops" == *"jar"* ]]
+			then
+				classpath="$microg_dir/build/$dep/$dep.jar:$classpath"
+			fi
+		done
+	fi
+	_res="$classpath"
+}
+
+function find_classfiles {
+       	get_includes "$1"
+        local deps="$_res"
+        local files="$microg_dir/build/$1/classes"
+        if [ -n "$deps" ]
+        then
+               	for dep in $deps
+               	do
+                        get_build_typeops "$dep"
+                        local typeops="$_res"
+                       	if [[ "$typeops" == *"jar"* ]]
+                        then
+                                files="$microg_dir/build/$dep/$dep.jar $files"
+                        fi
+                done
+        fi
+        _res="$files"
+}
+
+function build_typeop_javac {
+	mkdir -p "$microg_dir/build/$1/classes"
+	find_build_file_dir "$1"
+	local filedir="$_res"
+	build_classpath "$1"
+	local classpath="$_res"
+	local sourcepath="$filedir/src"
+	local files=$(find -L "$filedir/src" -iname "*.java")
+	if [ -d "$microg_dir/build/$1/gen" ]
+	then
+		sourcepath="$sourcepath:$microg_dir/build/$1/gen"
+		files="$files $(find -L $microg_dir/build/$1/gen -iname "*.java")"
+	fi
+	javac -cp "$classpath" -nowarn -source 1.6 -target 1.6 -sourcepath "src:gen" -d "$microg_dir/build/$1/classes" $files
+}
+
+
+function build_typeop_java-jar {
+	cd "$microg_dir/build/$1/classes"
+	jar cf "$microg_dir/build/$1/$1.jar" $(find -L . -iname "*.class")
+}

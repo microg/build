@@ -1,0 +1,85 @@
+source "$microg_dir/lib/java.lib" # is required
+
+function build_typeop_sign-apk {
+	jarsigner -sigalg MD5withRSA -digestalg SHA1 -keystore "$sign_keystore" -storepass "$sign_storepass" -keypass "$sign_keypass" "$microg_dir/build/$1/$1.apk" "$sign_keyalias"
+}
+
+function build_typeop_pack-apk {
+	cd "$microg_dir/build/$1"
+	cp "resources.ap_" "$1.apk"
+	aapt add "$1.apk" "classes.dex" > /dev/null
+}
+
+function build_typeop_dex {
+	find_classfiles $1
+	local files="$_res"
+	dx --dex "--output=$microg_dir/build/$1/classes.dex" $files
+}
+
+function get_apklib_pacname {
+	find_build_file_dir "$1"
+        local filedir="$_res"
+	_res=$(xmllint --xpath "string(/manifest/@package)" "$filedir/AndroidManifest.xml")
+}
+
+function build_typeop_apklib {
+	find_build_file_dir "$1"
+        local filedir="$_res"
+	cp -r "$filedir/res" "$microg_dir/build/$1/res"
+}
+
+function build_typeop_aapt-package {
+	mkdir -p "$microg_dir/build/$1/gen"
+	local assets=""
+	if [ -d "$filedir/assets" ]
+	then
+		assets="-A $filedir/assets"
+	fi
+	get_includes "$1"
+	local incs="$_res"
+	local extra=""
+	local extraS=""
+	for inc in $incs
+	do
+		get_build_typeops "$inc"
+		local typeops="$_res"
+		if [[ "$typeops" == *"apklib"* ]]
+		then
+			get_apklib_pacname "$inc"
+			apkpac="$_res"
+			if [ $extra=="" ]
+			then
+				extra="--extra-packages $apkpac"
+			else
+				extra="$extra:$apkpac"
+			fi
+			extraS="-S $microg_dir/build/$inc/res $extraS"
+		fi
+	done
+	find_build_file_dir "$1"
+        local filedir="$_res"
+	get_apklib_pacname "$1"
+	local myname="$_res"
+	aapt package --auto-add-overlay -f -m -I "$android_sdk" -M "$filedir/AndroidManifest.xml" $assets $extra $extraS -S "$filedir/res" -J "$microg_dir/build/$1/gen" -F "$microg_dir/build/$1/resources.ap_"
+}
+
+function build_typeop_protoc-micro {
+	mkdir -p "$microg_dir/build/$1/gen"
+	find_build_file_dir "$1"
+	local filedir="$_res"
+	local files=$(find "$filedir/src" -iname "*.proto")
+	local is="-I$filedir/src"
+	if [ -d "$filedir/proto" ]
+        then
+		is="$is -I$filedir/proto"
+                files="$files $(find $filedir/proto -iname "*.proto")"
+        fi
+	protoc-micro "--javamicro_out=$microg_dir/build/$1/gen" $is $files
+}
+
+function build_typeop_aidl {
+	mkdir -p "$microg_dir/build/$1/gen"
+	find_build_file_dir "$1"
+        local filedir="$_res"
+	find "$filedir/src" -iname "*.aidl" | xargs -l -n 1 aidl "-p$sdk_dir/platforms/android-$sdk_version/framework.aidl" "-I$filedir/src" "-o$microg_dir/build/$1/gen"
+}

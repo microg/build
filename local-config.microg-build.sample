@@ -1,0 +1,8 @@
+# copy this to local-config.microg-build before running build.sh
+
+sdk_dir=$HOME/AndroidSDK # path to you android sdk installation
+sdk_version=18 # sdk version to use for compiling
+sign_keystore=$HOME/.keystore # path to your android compatible keystore
+sign_storepass=pass # password to you keystore
+sign_keyalias=key # name of key in keystore
+sign_keypass=pass # password of key in keystore

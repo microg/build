@@ -1,0 +1,9 @@
+function retrieve_build_file {
+	git clone "https://github.com/microg/$1.git" "$microg_dir/sources/$1"
+}
+
+function build_typeop_git-pull {
+	pushd "$microg_dir/sources/$1"
+	git pull
+	popd
+}

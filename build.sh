@@ -47,9 +47,9 @@ then
 	do
 		if [ -d $src/.git ]
 		then
-			pushd $src
+			pushd $src > /dev/null
 			git pull
-			popd
+			popd > /dev/null
 		fi
 	done
 fi

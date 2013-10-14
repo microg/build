@@ -3,7 +3,7 @@ function retrieve_build_file {
 }
 
 function build_typeop_git-pull {
-	pushd "$microg_dir/sources/$1"
+	pushd "$microg_dir/sources/$1" > /dev/null
 	git pull
-	popd
+	popd > /dev/null
 }

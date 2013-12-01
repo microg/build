@@ -1,0 +1,14 @@
+if [ ! -d "$sdk_dir/extras/android/support/v4" ]
+then
+	microg_error "could not find android-support-v4 in sdk"
+fi
+
+if [ ! -d "$microg_dir/sources/android-support-v4/src" ]
+then
+	ln -s "$sdk_dir/extras/android/support/v4/src" "$microg_dir/sources/android-support-v4/src"
+fi
+
+build_typeops="javac java-jar"
+libs_use=""
+libs_inc=""
+

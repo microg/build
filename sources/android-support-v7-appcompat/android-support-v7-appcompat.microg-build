@@ -1,0 +1,24 @@
+if [ ! -d "$sdk_dir/extras/android/support/v7/appcompat" ]
+then
+	microg_error "could not find android-support-v7-appcompat in sdk"
+fi
+
+if [ ! -e "$microg_dir/sources/android-support-v7-appcompat/android-support-v7-appcompat.jar" ]
+then
+	ln -s "$sdk_dir/extras/android/support/v7/appcompat/libs/android-support-v7-appcompat.jar" "$microg_dir/sources/android-support-v7-appcompat/android-support-v7-appcompat.jar"
+fi
+
+if [ ! -e "$microg_dir/sources/android-support-v7-appcompat/AndroidManifest.xml" ]
+then
+	ln -s "$sdk_dir/extras/android/support/v7/appcompat/AndroidManifest.xml" "$microg_dir/sources/android-support-v7-appcompat/AndroidManifest.xml"
+fi
+
+if [ ! -d "$microg_dir/sources/android-support-v7-appcompat/res" ]
+then
+	ln -s "$sdk_dir/extras/android/support/v7/appcompat/res" "$microg_dir/sources/android-support-v7-appcompat/res"
+fi
+
+build_typeops="apklib prebuilt-jar"
+libs_use="android-support-v4"
+libs_inc=""
+
